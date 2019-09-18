@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <AssemblyName>BlobApp</AssemblyName>
+    <RootNamespace>BlobApp</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

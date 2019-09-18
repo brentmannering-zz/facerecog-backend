@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace BlobStorageASP.NETCore.Controllers
+namespace BlobApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
