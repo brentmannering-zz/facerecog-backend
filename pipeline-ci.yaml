@@ -1,0 +1,63 @@
+name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - master
+
+stages:
+- stage: Fronted_Build
+  displayName: 'FaceRecog frontend Build'
+  jobs:
+  - job: Build
+    displayName: 'Building FaceRecog frontend component'
+    pool:
+      name: Hosted Windows 2019 with VS2019
+
+    steps:
+    - checkout: self
+      fetchDepth: 10
+      clean: false
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet restore'
+      inputs:
+        command: restore
+        projects: '**/*.sln'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test'
+      inputs:
+        command: test
+        projects: '**/*.sln'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet publish'
+      inputs:
+        command: publish
+        publishWebProjects: false
+        projects: '**/*csproj'
+        arguments: '--configuration release'
+
+    - script: |
+        git clone https://github.com/zufengxu/facerecog-infrastructure.git
+      workingDirectory: '$(Build.SourcesDirectory)'
+      displayName: 'Command Line Script'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact webapi'
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/BlobApp/bin/Release/netcoreapp2.2/publish.zip'
+        ArtifactName: webapi
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact function api'
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/FaceApp/bin/Release/netcoreapp2.1/publish.zip'
+        ArtifactName: funcapi
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: infrastructure'
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/facerecog-infrastructure'
+        ArtifactName: infrastructure
