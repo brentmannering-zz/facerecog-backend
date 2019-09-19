@@ -1,0 +1,47 @@
+parameters:
+  enterpriseCode: ''
+  environmentCode: ''
+  contextCode: ''
+  functionKey: ''
+  azureSubscription: ''
+  regionCode: ''
+  region: 'Southeast Asia'
+
+steps:
+  - task: AzurePowerShell@4
+    displayName: ${{ parameters.enterpriseCode }}-${{ parameters.environmentCode }}-${{ parameters.regionCode }}-rgrp-${{ parameters.contextCode }}
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscription }}
+      azurePowerShellVersion: LatestVersion
+      ScriptType: InlineScript
+      Inline: |
+        $EnterpriseCode = "${{ parameters.enterpriseCode }}"
+        $EnvironmentCode = "${{ parameters.environmentCode }}"
+        $ContextCode = "${{ parameters.contextCode }}"
+        $ResourceGroupLocationCode = "${{ parameters.regionCode }}"
+        $ResourceGroupLocation = if ($ResourceGroupLocationCode -eq "auea") { "Australia East" } elseif ($ResourceGroupLocationCode -eq "ause") { "Australia Southeast" } elseif ($ResourceGroupLocationCode -eq "sea") { "Southeast Asia" }
+        $resourceGroupName = ("{0}-{1}-{2}-rgrp-{3}" `
+            -f $EnterpriseCode, $EnvironmentCode, $ResourceGroupLocationCode, $ContextCode)
+        Write-Output "Deployment location: $ResourceGroupLocation"
+        New-AzResourceGroup `
+            -Name $ResourceGroupName `
+            -Location $ResourceGroupLocation `
+            -Force | Out-Null
+
+  - task: AzureResourceGroupDeployment@2
+    displayName: 'App Service Plan: ${{ parameters.enterpriseCode }}-${{ parameters.environmentCode }}-${{ parameters.regionCode }}-asp-${{ parameters.contextCode }}'
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscription }}
+      resourceGroupName: '${{ parameters.enterpriseCode }}-${{ parameters.EnvironmentCode }}-${{ parameters.RegionCode }}-rgrp-${{ parameters.contextCode }}'
+      location: 'ignore'
+      csmFile: '$(Agent.BuildDirectory)/infrastructure/asp.json'
+      csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/asp-parameters-${{ parameters.RegionCode }}-${{ parameters.EnvironmentCode }}.json'
+
+  - task: AzureResourceGroupDeployment@2
+    displayName: 'Application insights: ${{ parameters.enterpriseCode }}-${{ parameters.environmentCode }}-${{ parameters.regionCode }}-ins-${{ parameters.contextCode }}'
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscription }}
+      resourceGroupName: '${{ parameters.enterpriseCode }}-${{ parameters.EnvironmentCode }}-${{ parameters.RegionCode }}-rgrp-${{ parameters.contextCode }}'
+      location: 'ignore'
+      csmFile: '$(Agent.BuildDirectory)/infrastructure/insights.json'
+      csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/insights-parameters-${{ parameters.RegionCode }}-${{ parameters.EnvironmentCode }}.json'

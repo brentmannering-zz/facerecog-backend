@@ -61,3 +61,58 @@ stages:
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/facerecog-infrastructure'
         ArtifactName: infrastructure
+
+- stage: FaceRecog_Backend_Release_CI
+  displayName: 'FaceRecog CI Deployment'
+  jobs:
+  - deployment: Deployment_Continuous_Integration_WebAppApi
+    displayName: 'Deploying to CI environment'
+    pool:
+      name: Hosted Windows 2019 with VS2019
+
+    variables:
+      enterpriseCode: 'par'
+      environmentCode: 'ci'
+      contextCode: 'fr'
+      regionCode: 'sea'
+
+    environment: 'Continuous Integration'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - template: deployment-steps.yaml
+              parameters:
+                enterpriseCode: ${{ variables.enterpriseCode }}
+                environmentCode: ${{ variables.environmentCode }}
+                contextCode: ${{ variables.contextCode }}
+                regionCode: ${{ variables.regionCode }}
+                functionKey: $(functionKey-ci)
+                azureSubscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+
+            - task: AzureResourceGroupDeployment@2
+              displayName: 'Storage Account: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-str-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+                resourceGroupName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-rgrp-${{ variables.contextCode }}'
+                location: 'Southeast Asia'
+                csmFile: '$(Agent.BuildDirectory)/infrastructure/storage.json'
+                csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/storage-parameters-${{ variables.regionCode }}-${{ variables.environmentCode }}.json'
+
+            - task: AzureResourceGroupDeployment@2
+              displayName: 'Web App Api: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-api-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+                resourceGroupName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-rgrp-${{ variables.contextCode }}'
+                location: 'Southeast Asia'
+                csmFile: '$(Agent.BuildDirectory)/infrastructure/api.json'
+                csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/api-parameters-${{ variables.regionCode }}-${{ variables.environmentCode }}.json'
+
+            - task: AzureWebApp@1
+              displayName: 'Azure Web App Deploy: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-api-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+                appType: webApp
+                appName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-api-${{ variables.contextCode }}'
+                package: '$(Agent.BuildDirectory)/webapi/publish.zip'
+                deploymentMethod: zipDeploy
