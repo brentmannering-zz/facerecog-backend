@@ -173,3 +173,115 @@ stages:
                   $url
                   Invoke-RestMethod -uri $url -Method PUT -Headers @{ Authorization="Bearer $accessToken"; "Content-Type"="application/json" } -Body $payload
                 azurePowerShellVersion: LatestVersion
+
+- stage: FaceRecog_Backend_Release_Prod
+  displayName: 'FaceRecog Production Deployment'
+  jobs:
+  - deployment: Deployment_Production_WebAppApi
+    displayName: 'Deploying web app api to production environment'
+    pool:
+      name: Hosted Windows 2019 with VS2019
+
+    variables:
+      enterpriseCode: 'par'
+      environmentCode: 'pr'
+      contextCode: 'fr'
+      regionCode: 'sea'
+      subscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - template: deployment-steps.yaml
+              parameters:
+                enterpriseCode: ${{ variables.enterpriseCode }}
+                environmentCode: ${{ variables.environmentCode }}
+                contextCode: ${{ variables.contextCode }}
+                regionCode: ${{ variables.regionCode }}
+                functionKey: $(functionKey-ci)
+                azureSubscription: ${{ variables.subscription }}
+
+            - task: AzureResourceGroupDeployment@2
+              displayName: 'Storage Account: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-str-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: ${{ variables.subscription }}
+                resourceGroupName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-rgrp-${{ variables.contextCode }}'
+                location: 'Southeast Asia'
+                csmFile: '$(Agent.BuildDirectory)/infrastructure/storage.json'
+                csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/storage-parameters-${{ variables.regionCode }}-${{ variables.environmentCode }}.json'
+
+            - task: AzureResourceGroupDeployment@2
+              displayName: 'Web App Api: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-api-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: ${{ variables.subscription }}
+                resourceGroupName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-rgrp-${{ variables.contextCode }}'
+                location: 'Southeast Asia'
+                csmFile: '$(Agent.BuildDirectory)/infrastructure/api.json'
+                csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/api-parameters-${{ variables.regionCode }}-${{ variables.environmentCode }}.json'
+
+            - task: AzureWebApp@1
+              displayName: 'Azure Web App Deploy: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-api-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: ${{ variables.subscription }}
+                appType: webApp
+                appName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-api-${{ variables.contextCode }}'
+                package: '$(Agent.BuildDirectory)/webapi/publish.zip'
+                deploymentMethod: zipDeploy
+
+  - deployment: Deployment_Production_FunctionApi
+    displayName: 'Deploying function api to production environment'
+    pool:
+      name: Hosted Windows 2019 with VS2019
+
+    variables:
+      enterpriseCode: 'par'
+      environmentCode: 'pr'
+      contextCode: 'fr'
+      regionCode: 'sea'
+      subscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            # App service plan, app insights, storage accounts have already been created in the previous job.
+            - task: AzureResourceGroupDeployment@2
+              displayName: 'Function Api: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-fnc-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: ${{ variables.subscription }}
+                resourceGroupName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-rgrp-${{ variables.contextCode }}'
+                location: 'Southeast Asia'
+                csmFile: '$(Agent.BuildDirectory)/infrastructure/func.json'
+                csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/func-parameters-${{ variables.regionCode }}-${{ variables.environmentCode }}.json'
+
+            - task: AzureFunctionApp@1
+              displayName: 'Azure Function App Deploy: ${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-fnc-${{ variables.contextCode }}'
+              inputs:
+                azureSubscription: ${{ variables.subscription }}
+                appType: functionApp
+                appName: '${{ variables.enterpriseCode }}-${{ variables.environmentCode }}-${{ variables.regionCode }}-fnc-${{ variables.contextCode }}'
+                package: '$(Agent.BuildDirectory)/funcapi/publish.zip'
+                deploymentMethod: zipDeploy
+
+            - task: AzurePowerShell@4
+              displayName: 'Fucntion App Set Function Key'
+              inputs:
+                azureSubscription: ${{ variables.subscription }}
+                ScriptType: InlineScript
+                Inline: |
+                  $subId = (get-azcontext).Subscription.Id
+                  $keyName = "authkey"
+                  $enterpriseCode = '${{ variables.enterpriseCode }}'
+                  $environmentCode = '${{ variables.environmentCode }}'
+                  $regionCode = '${{ variables.regionCode }}'
+                  $contextCode = '${{ variables.contextCode }}'
+                  $payload = (@{ properties=@{ name=$keyName; value="$(functionKey-ci)" } } | ConvertTo-Json -Compress)
+                  $url = ("https://management.azure.com/subscriptions/{5}/resourceGroups/{0}-{1}-{2}-rgrp-{3}/providers/Microsoft.Web/sites/{0}-{1}-{2}-fnc-{3}/functions/FaceFunction/keys/{4}?api-version=2018-02-01" `
+                      -f $enterpriseCode, $environmentCode, $regionCode, $contextCode, $keyName, $subId )
+                  $accessToken = (Get-AzContext).tokencache.readitems().accesstoken
+                  $url
+                  Invoke-RestMethod -uri $url -Method PUT -Headers @{ Authorization="Bearer $accessToken"; "Content-Type"="application/json" } -Body $payload
+                azurePowerShellVersion: LatestVersion
