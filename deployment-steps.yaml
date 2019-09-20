@@ -45,3 +45,12 @@ steps:
       location: 'ignore'
       csmFile: '$(Agent.BuildDirectory)/infrastructure/insights.json'
       csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/insights-parameters-${{ parameters.RegionCode }}-${{ parameters.EnvironmentCode }}.json'
+
+  - task: AzureResourceGroupDeployment@2
+    displayName: 'Storage Account: ${{ parameters.enterpriseCode }}-${{ parameters.environmentCode }}-${{ parameters.regionCode }}-str-${{ parameters.contextCode }}'
+    inputs:
+      azureSubscription: 'Microsoft Azure Sponsorship (4a72c271-a544-46af-8e9d-75bb1f1e9865)'
+      resourceGroupName: '${{ parameters.enterpriseCode }}-${{ parameters.environmentCode }}-${{ parameters.regionCode }}-rgrp-${{ parameters.contextCode }}'
+      location: 'Southeast Asia'
+      csmFile: '$(Agent.BuildDirectory)/infrastructure/storage.json'
+      csmParametersFile: '$(Agent.BuildDirectory)/infrastructure/storage-parameters-${{ parameters.regionCode }}-${{ parameters.environmentCode }}.json'
