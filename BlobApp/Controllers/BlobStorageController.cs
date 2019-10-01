@@ -6,6 +6,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System;
 
 namespace BlobApp.Controllers
 {
@@ -15,9 +16,30 @@ namespace BlobApp.Controllers
     {
         private AppSettings AppSettings { get; set; }
 
+        private string storageConnection;
+        private string storageContainer;
+
         public BlobStorageController(IOptions<AppSettings> settings)
         {
             AppSettings = settings.Value;
+
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("storageConnection")))
+            {
+                storageConnection = AppSettings.StorageConnection;
+            }
+            else
+            {
+                storageConnection = Environment.GetEnvironmentVariable("storageConnection");
+            }
+
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("container")))
+            {
+                storageContainer = AppSettings.Container;
+            }
+            else
+            {
+                storageContainer = Environment.GetEnvironmentVariable("container");
+            }
         }
 
         [HttpGet("ListFiles")]
@@ -27,11 +49,11 @@ namespace BlobApp.Controllers
             List<CloudBlockBlob> blobs = new List<CloudBlockBlob>();
             try
             {
-                if (CloudStorageAccount.TryParse(AppSettings.StorageConnection, out CloudStorageAccount storageAccount))
+                if (CloudStorageAccount.TryParse(storageConnection, out CloudStorageAccount storageAccount))
                 {
                     CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
 
-                    CloudBlobContainer container = blobClient.GetContainerReference(AppSettings.Container);
+                    CloudBlobContainer container = blobClient.GetContainerReference(storageContainer);
 
                     BlobResultSegment resultSegment = await container.ListBlobsSegmentedAsync(null);
                     foreach (IListBlobItem item in resultSegment.Results)
@@ -56,11 +78,11 @@ namespace BlobApp.Controllers
         {
             try
             {
-                if (CloudStorageAccount.TryParse(AppSettings.StorageConnection, out CloudStorageAccount storageAccount))
+                if (CloudStorageAccount.TryParse(storageConnection, out CloudStorageAccount storageAccount))
                 {
                     CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
 
-                    CloudBlobContainer container = blobClient.GetContainerReference(AppSettings.Container);
+                    CloudBlobContainer container = blobClient.GetContainerReference(storageContainer);
 
                     CloudBlockBlob blockBlob = container.GetBlockBlobReference(asset.FileName);
 
@@ -83,10 +105,10 @@ namespace BlobApp.Controllers
         public async Task<IActionResult> DownloadFile(string fileName)
         {
             MemoryStream ms = new MemoryStream();
-            if (CloudStorageAccount.TryParse(AppSettings.StorageConnection, out CloudStorageAccount storageAccount))
+            if (CloudStorageAccount.TryParse(storageConnection, out CloudStorageAccount storageAccount))
             {
                 CloudBlobClient BlobClient = storageAccount.CreateCloudBlobClient();
-                CloudBlobContainer container = BlobClient.GetContainerReference(AppSettings.Container);
+                CloudBlobContainer container = BlobClient.GetContainerReference(storageContainer);
 
                 if (await container.ExistsAsync())
                 {
@@ -121,10 +143,10 @@ namespace BlobApp.Controllers
         {
             try
             {
-                if (CloudStorageAccount.TryParse(AppSettings.StorageConnection, out CloudStorageAccount storageAccount))
+                if (CloudStorageAccount.TryParse(storageConnection, out CloudStorageAccount storageAccount))
                 {
                     CloudBlobClient BlobClient = storageAccount.CreateCloudBlobClient();
-                    CloudBlobContainer container = BlobClient.GetContainerReference(AppSettings.Container);
+                    CloudBlobContainer container = BlobClient.GetContainerReference(storageContainer);
 
                     if (await container.ExistsAsync())
                     {

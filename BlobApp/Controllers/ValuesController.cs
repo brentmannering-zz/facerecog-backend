@@ -14,7 +14,9 @@ namespace BlobApp.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            return new string[] { "value1", "value2" };
+            string envValue = Environment.GetEnvironmentVariable("RunFrom");
+
+            return new string[] { envValue, "value2" };
         }
 
         // GET api/values/5
