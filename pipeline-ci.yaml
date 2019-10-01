@@ -19,6 +19,11 @@ stages:
       fetchDepth: 10
       clean: false
 
+    - task: UseDotNet@2
+      displayName: 'Use .Net Core sdk 2.2.x'
+      inputs:
+        version: 2.2.x
+
     - task: DotNetCoreCLI@2
       displayName: 'dotnet restore'
       inputs:
