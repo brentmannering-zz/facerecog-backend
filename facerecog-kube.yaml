@@ -1,0 +1,95 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: backendfuncapi
+  labels:
+    name: backendfuncapi
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: backendfuncapi
+    spec:
+      containers:
+      - name: backendfuncapi
+        image: nxuacr.azurecr.io/facerecog/backendfuncapi:0.0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: faceApiBaseUrl
+          value: "https://southeastasia.api.cognitive.microsoft.com"
+        - name: faceApiKey
+          value: ""
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+        searches:
+          - nkhngbc1dpvehj4upoqzn5gcub.ix.internal.cloudapp.net
+      imagePullSecrets:
+      - name: facerecogsecret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backendfuncapi
+  labels:
+    name: backendfuncapi
+spec:
+  loadBalancerIP: 168.63.254.185
+  type: LoadBalancer
+  ports:
+  - port: 8001
+    targetPort: 80
+  selector:
+    name: backendfuncapi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: backendwebapi
+  labels:
+    name: backendwebapi
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: backendwebapi
+    spec:
+      containers:
+      - name: backendwebapi
+        image: nxuacr.azurecr.io/facerecog/backendwebapi:0.0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: storageConnection
+          value: ""
+        - name: container
+          value: "images"
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+        searches:
+          - nkhngbc1dpvehj4upoqzn5gcub.ix.internal.cloudapp.net
+      imagePullSecrets:
+      - name: facerecogsecret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backendwebapi
+  labels:
+    name: backendwebapi
+spec:
+  loadBalancerIP: 168.63.254.185
+  type: LoadBalancer
+  ports:
+  - port: 8002
+    targetPort: 80
+  selector:
+    name: backendwebapi
