@@ -41,10 +41,8 @@ metadata:
   labels:
     name: backendfuncapi
 spec:
-  loadBalancerIP: 168.63.254.185
-  type: LoadBalancer
   ports:
-  - port: 8001
+  - port: 80
     targetPort: 80
   selector:
     name: backendfuncapi
@@ -92,10 +90,8 @@ metadata:
   labels:
     name: backendwebapi
 spec:
-  loadBalancerIP: 168.63.254.185
-  type: LoadBalancer
   ports:
-  - port: 8002
+  - port: 80
     targetPort: 80
   selector:
     name: backendwebapi
