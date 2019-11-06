@@ -21,7 +21,10 @@ spec:
         - name: faceApiBaseUrl
           value: "https://southeastasia.api.cognitive.microsoft.com"
         - name: faceApiKey
-          value: ""
+          valueFrom:
+            secretKeyRef:
+              name: envsecret
+              key: faceApiKey
       dnsPolicy: None
       dnsConfig:
         nameservers:
@@ -67,7 +70,10 @@ spec:
         - containerPort: 80
         env:
         - name: storageConnection
-          value: ""
+          valueFrom:
+            secretKeyRef:
+              name: envsecret
+              key: storageConnection
         - name: container
           value: "images"
       dnsPolicy: None
