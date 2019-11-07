@@ -9,7 +9,7 @@ spec:
   template:
     metadata:
       labels:
-        name: backendfuncapi
+        app: backendfuncapi
     spec:
       containers:
       - name: backendfuncapi
@@ -43,9 +43,8 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 80
   selector:
-    name: backendfuncapi
+    app: backendfuncapi
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -58,7 +57,7 @@ spec:
   template:
     metadata:
       labels:
-        name: backendwebapi
+        app: backendwebapi
     spec:
       containers:
       - name: backendwebapi
@@ -88,10 +87,9 @@ kind: Service
 metadata:
   name: backendwebapi
   labels:
-    name: backendwebapi
+    app: backendwebapi
 spec:
   ports:
   - port: 80
-    targetPort: 80
   selector:
     name: backendwebapi
