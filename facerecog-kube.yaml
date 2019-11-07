@@ -47,6 +47,21 @@ spec:
     app: backendfuncapi
 ---
 apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: backendfuncapi
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /api/$2
+spec:
+  rules:
+  - http:
+      paths:
+        - path: /func(/|$)(.*)
+          backend:
+            serviceName: backendfuncapi
+            servicePort: 80
+---
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: backendwebapi
@@ -87,9 +102,24 @@ kind: Service
 metadata:
   name: backendwebapi
   labels:
-    app: backendwebapi
+    name: backendwebapi
 spec:
   ports:
   - port: 80
   selector:
-    name: backendwebapi
+    app: backendwebapi
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: backendwebapi
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /api/blobstorage/$2
+spec:
+  rules:
+  - http:
+      paths:
+        - path: /web(/|$)(.*)
+          backend:
+            serviceName: backendwebapi
+            servicePort: 80
