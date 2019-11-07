@@ -52,7 +52,8 @@ metadata:
   name: backendfuncapi
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /api/$2
-    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:8888"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
 spec:
   rules:
   - http:
@@ -116,7 +117,8 @@ metadata:
   name: backendwebapi
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /api/blobstorage/$2
-    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:8888"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
 spec:
   rules:
   - http:
