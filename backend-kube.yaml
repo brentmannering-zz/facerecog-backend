@@ -18,13 +18,16 @@ spec:
         ports:
         - containerPort: 80
         env:
-        - name: faceApiBaseUrl
-          value: "https://southeastasia.api.cognitive.microsoft.com"
+        # - name: faceApiBaseUrl
+        #   value: "https://southeastasia.api.cognitive.microsoft.com"
         - name: faceApiKey
           valueFrom:
             secretKeyRef:
               name: envsecret
               key: faceApiKey
+        envFrom:
+        - configMapRef:
+            name: backendconfig
       dnsPolicy: None
       dnsConfig:
         nameservers:
@@ -88,8 +91,11 @@ spec:
             secretKeyRef:
               name: envsecret
               key: storageConnection
-        - name: container
-          value: "images"
+        # - name: container
+        #   value: "images"
+        envFrom:
+        - configMapRef:
+            name: backendconfig
       dnsPolicy: None
       dnsConfig:
         nameservers:
